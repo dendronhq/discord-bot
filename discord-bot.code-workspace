@@ -1,13 +1,14 @@
 {
-    "folders": [
-        {
-            "path": "."
-        }
-    ],
-    "settings": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.wordWrap": "on",
-        "editor.tabCompletion": "on",
-        "editor.formatOnSave": true,
+  "folders": [
+    {
+      "path": "."
     }
+  ],
+  "settings": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.wordWrap": "on",
+    "editor.tabCompletion": "on",
+    "editor.formatOnSave": true,
+    "prettier.singleQuote": true
+  }
 }
