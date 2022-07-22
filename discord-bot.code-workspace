@@ -1,0 +1,14 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "editor.wordWrap": "on",
+    "editor.tabCompletion": "on",
+    "editor.codeActionsOnSave": {
+      "source.fixAll": true
+    }
+  }
+}
