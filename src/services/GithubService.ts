@@ -2,6 +2,7 @@ import { Octokit } from '@octokit/rest';
 import crypto from 'crypto';
 import yaml from 'js-yaml';
 import { Inbox } from '../components';
+import config from '../config';
 
 export type GithubServiceOpts = {
   octokit: Octokit;
@@ -29,19 +30,10 @@ export class GithubService {
   }
 
   constructor() {
-    this.octokit = new Octokit({ auth: process.env.GITHUB_PAT });
-    if (process.env.OWNER === undefined) {
-      throw Error('No owner set.');
-    }
-    if (process.env.REPO === undefined) {
-      throw Error('No repo set.');
-    }
-    if (process.env.BRANCH === undefined) {
-      throw Error('No branch set.');
-    }
-    this.owner = process.env.OWNER;
-    this.repo = process.env.REPO;
-    this.branch = process.env.BRANCH;
+    this.octokit = new Octokit({ auth: config.GITHUB_PAT });
+    this.owner = config.OWNER;
+    this.repo = config.REPO;
+    this.branch = config.BRANCH;
   }
 
   private getServiceProps() {
