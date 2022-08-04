@@ -22,6 +22,8 @@ export class GithubService {
 
   private branch: string;
 
+  private dendronConfig: any | undefined;
+
   static instance() {
     if (!_singleton) {
       _singleton = new GithubService();
@@ -113,8 +115,22 @@ export class GithubService {
     name: string;
   }) {
     const { name } = opts;
+    if (this.dendronConfig === undefined) {
+      const { dendronConfig } = await this.fetchConfig();
+      this.dendronConfig = dendronConfig;
+    }
+
+    let prefix = 'notes';
+    const isSelfContained = this.dendronConfig.dev.enableSelfContainedVault;
+
+    if (!isSelfContained) {
+      // TODO: this needs to change once we decide to support multivault
+      const vault = this.dendronConfig.workspace.vaults[0];
+      prefix = vault.fsPath;
+    }
+
     const { commitSHA, treeSHA, content } = await this.fetchObject({
-      query: `notes/${name}.md`,
+      query: `${prefix}/${name}.md`,
     });
     return {
       commitSHA,
@@ -127,11 +143,11 @@ export class GithubService {
     const { commitSHA, treeSHA, content } = await this.fetchObject({
       query: 'dendron.yml',
     });
-    const config = yaml.load(content);
+    const dendronConfig = yaml.load(content);
     return {
       commitSHA,
       treeSHA,
-      config,
+      dendronConfig,
     };
   }
 
