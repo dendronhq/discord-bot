@@ -39,7 +39,7 @@ export default class LookupCommand extends BaseCommand {
       });
       return;
     }
-    interaction.deferReply({ ephemeral: true });
+    interaction.deferReply();
     try {
       const fetchNoteResp = await github.fetchNote({ name });
       const { content, url, id } = fetchNoteResp;
