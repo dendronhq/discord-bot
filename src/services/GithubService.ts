@@ -1,6 +1,8 @@
 import { Octokit } from '@octokit/rest';
 import crypto from 'crypto';
 import yaml from 'js-yaml';
+import matter from 'gray-matter';
+import _ from 'lodash';
 import { Inbox } from '../components';
 import config from '../config';
 
@@ -22,7 +24,7 @@ export class GithubService {
 
   private branch: string;
 
-  private dendronConfig: any | undefined;
+  public dendronConfig: any | undefined;
 
   static instance() {
     if (!_singleton) {
@@ -129,13 +131,36 @@ export class GithubService {
       prefix = vault.fsPath;
     }
 
-    const { commitSHA, treeSHA, content } = await this.fetchObject({
+    const {
+      commitSHA, treeSHA, content,
+    } = await this.fetchObject({
       query: `${prefix}/${name}.md`,
     });
+
+    // url grabbed from the octokit api is not human readable.
+    // create a humand readable url
+    // TODO: we should probably add common-all / common-server in the future
+    // and reuse the logic we already have instead of rolling up
+    // custom logic separately here
+    // this probably also doesn't belong in GithubService
+    const url = `https://github.com/${config.OWNER}/${config.REPO}/blob/${config.BRANCH}/${prefix}/${name}.md`;
+
+    const { data: frontmatter } = matter(content, {
+      engines: {
+        yaml: {
+          parse: (s: string) => yaml.load(s) as object,
+          stringify: (data: object) => yaml.dump(data),
+        },
+      },
+    });
+    const { id } = frontmatter;
+
     return {
       commitSHA,
       treeSHA,
       content,
+      url,
+      id: _.toString(id),
     };
   }
 
