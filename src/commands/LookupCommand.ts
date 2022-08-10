@@ -3,7 +3,6 @@ import {
   ButtonStyle,
   ChatInputCommandInteraction,
   MessagePayload,
-  PermissionFlagsBits,
   SlashCommandBuilder,
   WebhookEditMessageOptions,
 } from 'discord.js';
