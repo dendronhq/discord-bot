@@ -23,8 +23,7 @@ export default class LookupCommand extends BaseCommand {
     return new SlashCommandBuilder()
       .setName(this.name)
       .setDescription('Look up note')
-      .addStringOption((option) => option.setName('query').setDescription('Exact match'))
-      .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers);
+      .addStringOption((option) => option.setName('query').setDescription('Exact match'));
   }
 
   public async execute(opts: {
