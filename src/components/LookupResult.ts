@@ -25,7 +25,11 @@ export class LookupResultBuilder {
       name: key,
       value: value.toString(),
       inline: true,
-    })).filter((field) => field.name !== 'desc');
+    })).filter((field) => field.name !== 'desc'
+        && field.name !== 'config'
+        && (
+          _.isString(field.value) || _.isNumber(field.value)
+        ));
 
     fields.push({
       name: 'Github URL',
@@ -38,7 +42,7 @@ export class LookupResultBuilder {
       .addFields(fields);
 
     if (frontmatter.desc !== '') {
-      frontmatterEmbedBuilder.setDescription(frontmatter.desc);
+      frontmatterEmbedBuilder.setDescription(`_*${frontmatter.desc}*_`);
     }
 
     if (dendronConfig !== undefined) {
@@ -62,11 +66,12 @@ export class LookupResultBuilder {
     return bodyEmbedBuilder;
   }
 
-  public build() {
-    return [
-      this.buildFrontmatterEmbed(),
-      this.buildBodyEmbed(),
-    ];
+  public build(mode: string | null) {
+    const payload = [this.buildFrontmatterEmbed()];
+    if (mode !== 'fm') {
+      payload.push(this.buildBodyEmbed());
+    }
+    return payload;
   }
 
   constructor(opts: LookupResultCreateOpts) {

@@ -1,10 +1,6 @@
-import { ActionRowBuilder, ButtonBuilder, MessageActionRowComponentBuilder } from '@discordjs/builders';
 import {
-  ButtonStyle,
   ChatInputCommandInteraction,
-  MessagePayload,
   SlashCommandBuilder,
-  WebhookEditMessageOptions,
 } from 'discord.js';
 import { LookupResultBuilder } from '../components';
 import { GithubService } from '../services';
@@ -23,7 +19,20 @@ export default class LookupCommand extends BaseCommand {
     return new SlashCommandBuilder()
       .setName(this.name)
       .setDescription('Look up note')
-      .addStringOption((option) => option.setName('query').setDescription('Exact match'));
+      .addStringOption(
+        (option) => option.setName('query')
+          .setDescription('Exact match')
+          .setRequired(true),
+      )
+      .addStringOption(
+        (option) => option.setName('mode')
+          .setDescription('Select mode')
+          .setRequired(false)
+          .addChoices(
+            { name: 'full', value: 'full' },
+            { name: 'fm', value: 'fm' },
+          ),
+      );
   }
 
   public async execute(opts: {
@@ -39,6 +48,7 @@ export default class LookupCommand extends BaseCommand {
       return;
     }
     interaction.deferReply();
+    const mode = interaction.options.getString('mode');
     try {
       const fetchNoteResp = await github.fetchNote({ name });
       const {
@@ -51,7 +61,7 @@ export default class LookupCommand extends BaseCommand {
       interaction.editReply({
         embeds: new LookupResultBuilder({
           frontmatter, body, dendronConfig, blobUrl,
-        }).build(),
+        }).build(mode),
       });
     } catch (error) {
       console.log({ error });
@@ -59,39 +69,5 @@ export default class LookupCommand extends BaseCommand {
         content: `Couldn't find note \`${name}\``,
       });
     }
-  }
-
-  static noteTooLongReplyPayload(opts: {
-    id: string,
-    name: string,
-    url: string,
-    dendronConfig: any,
-  }): string | MessagePayload | WebhookEditMessageOptions {
-    const {
-      id, name, url, dendronConfig,
-    } = opts;
-    const content = `The note \`${name}\` is too long to display in Discord :face_with_spiral_eyes:`;
-
-    const actionRow = new ActionRowBuilder<MessageActionRowComponentBuilder>()
-      .addComponents(
-        new ButtonBuilder()
-          .setLabel('Open in GitHub')
-          .setURL(url)
-          .setStyle(ButtonStyle.Link),
-      );
-    if (dendronConfig !== undefined) {
-      const publishingConfig = dendronConfig.publishing;
-      const urlRoot: string = publishingConfig.siteUrl;
-      actionRow.addComponents(
-        new ButtonBuilder()
-          .setLabel(`Open in ${urlRoot.split('//').slice(-1)}`)
-          .setURL(`${urlRoot}/notes/${id}`)
-          .setStyle(ButtonStyle.Link),
-      );
-    }
-    return {
-      content,
-      components: [actionRow],
-    };
   }
 }
