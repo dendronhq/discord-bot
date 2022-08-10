@@ -6,6 +6,7 @@ import {
   SlashCommandBuilder,
   WebhookEditMessageOptions,
 } from 'discord.js';
+import { LookupResultBuilder } from '../components';
 import { GithubService } from '../services';
 import BaseCommand from './BaseCommand';
 
@@ -40,18 +41,20 @@ export default class LookupCommand extends BaseCommand {
     interaction.deferReply();
     try {
       const fetchNoteResp = await github.fetchNote({ name });
-      const { content, url, id } = fetchNoteResp;
+      const {
+        url: blobUrl,
+        frontmatter,
+        body,
+      } = fetchNoteResp;
       const { dendronConfig } = github;
-      if (content.length < 2000) {
-        interaction.editReply({
-          content: `\`\`\`${content}\`\`\``,
-        });
-      } else {
-        interaction.editReply(LookupCommand.noteTooLongReplyPayload({
-          id, name, url, dendronConfig,
-        }));
-      }
+
+      interaction.editReply({
+        embeds: new LookupResultBuilder({
+          frontmatter, body, dendronConfig, blobUrl,
+        }).build(),
+      });
     } catch (error) {
+      console.log({ error });
       interaction.editReply({
         content: `Couldn't find note \`${name}\``,
       });
