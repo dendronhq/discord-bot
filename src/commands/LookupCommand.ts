@@ -31,6 +31,7 @@ export default class LookupCommand extends BaseCommand {
           .addChoices(
             { name: 'full', value: 'full' },
             { name: 'fm', value: 'fm' },
+            { name: 'body', value: 'body' },
           ),
       );
   }

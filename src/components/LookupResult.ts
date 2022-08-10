@@ -61,13 +61,16 @@ export class LookupResultBuilder {
     }
     const bodyEmbedBuilder = new EmbedBuilder()
       .setColor(this.DENDRON_GREEN)
-      .setTitle('Note Body')
       .setDescription(body);
     return bodyEmbedBuilder;
   }
 
   public build(mode: string | null) {
-    const payload = [this.buildFrontmatterEmbed()];
+    const payload = [];
+    if (mode !== 'body') {
+      payload.push(this.buildFrontmatterEmbed());
+    }
+
     if (mode !== 'fm') {
       payload.push(this.buildBodyEmbed());
     }
