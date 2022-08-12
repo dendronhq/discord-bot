@@ -9,6 +9,10 @@
     "editor.tabCompletion": "on",
     "editor.codeActionsOnSave": {
       "source.fixAll": true
+    },
+    "editor.tabSize": 2,
+    "files.exclude": {
+      "**/node_modules": true,
     }
   }
 }

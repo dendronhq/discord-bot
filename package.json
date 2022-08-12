@@ -4,7 +4,8 @@
   "main": "./out/index.js",
   "scripts": {
     "build": "npx tsc",
-    "start": "node -r dotenv/config ./out/hello.js"
+    "start": "node -r dotenv/config ./out/index.js",
+    "dev": "tsc-watch --onSuccess \"node -r dotenv/config ./out/index.js\""
   },
   "repository": {
     "type": "git",
@@ -25,9 +26,11 @@
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-import-resolver-typescript": "^3.3.0",
     "eslint-plugin-import": "^2.26.0",
-    "nodemon": "^2.0.19"
+    "tsc-watch": "^5.0.3"
   },
   "dependencies": {
+    "@dendronhq/common-all": "^0.106.0",
+    "@dendronhq/common-server": "^0.106.0",
     "@discordjs/builders": "^1.0.0",
     "@discordjs/rest": "^1.0.0",
     "@octokit/rest": "^19.0.3",
@@ -35,8 +38,10 @@
     "discord-api-types": "^0.36.2",
     "discord.js": "^14.0.3",
     "dotenv": "^16.0.1",
+    "envalid": "^7.3.1",
+    "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
-    "typescript": "^4.7.4",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "typescript": "^4.7.4"
   }
 }

@@ -1,7 +1,11 @@
 import { Octokit } from '@octokit/rest';
-import crypto from 'crypto';
+// import crypto from 'crypto';
 import yaml from 'js-yaml';
-import { Inbox } from '../components';
+import matter from 'gray-matter';
+// import _ from 'lodash';
+import { IntermediateDendronConfig } from '@dendronhq/common-all';
+// import { Inbox } from '../components';
+import config from '../config';
 
 export type GithubServiceOpts = {
   octokit: Octokit;
@@ -21,6 +25,8 @@ export class GithubService {
 
   private branch: string;
 
+  public dendronConfig: IntermediateDendronConfig | undefined;
+
   static instance() {
     if (!_singleton) {
       _singleton = new GithubService();
@@ -29,19 +35,10 @@ export class GithubService {
   }
 
   constructor() {
-    this.octokit = new Octokit({ auth: process.env.GITHUB_PAT });
-    if (process.env.OWNER === undefined) {
-      throw Error('No owner set.');
-    }
-    if (process.env.REPO === undefined) {
-      throw Error('No repo set.');
-    }
-    if (process.env.BRANCH === undefined) {
-      throw Error('No branch set.');
-    }
-    this.owner = process.env.OWNER;
-    this.repo = process.env.REPO;
-    this.branch = process.env.BRANCH;
+    this.octokit = new Octokit({ auth: config.GITHUB_PAT });
+    this.owner = config.OWNER;
+    this.repo = config.REPO;
+    this.branch = config.BRANCH;
   }
 
   private getServiceProps() {
@@ -69,65 +66,103 @@ export class GithubService {
     };
   }
 
-  public async pushToDendron(opts: { destination: string; payload: string }) {
-    const { destination, payload } = opts;
+  // not used at the moment. also may need some changes before we start using it.
+  // public async pushToDendron(opts: { destination: string; payload: string }) {
+  //   const { destination, payload } = opts;
 
-    const { commitSHA, treeSHA, content: currentContent } = await this.fetchNote({
-      name: destination,
-    });
+  //   const { commitSHA, treeSHA, content: currentContent } = await this.fetchNote({
+  //     name: destination,
+  //   });
 
-    const inboxItem = new Inbox({ payload });
-    const newContent = currentContent.concat(inboxItem.toString());
+  //   const inboxItem = new Inbox({ payload });
+  //   const newContent = currentContent.concat(inboxItem.toString());
 
-    // create a new blob with new content
-    const newBlob = await this.octokit.rest.git.createBlob({
-      ...this.getServiceProps(),
-      content: newContent,
-      encoding: 'utf-8',
-    });
+  //   // create a new blob with new content
+  //   const newBlob = await this.octokit.rest.git.createBlob({
+  //     ...this.getServiceProps(),
+  //     content: newContent,
+  //     encoding: 'utf-8',
+  //   });
 
-    // create a new tree containing the new blob
-    const { data: createTreeData } = await this.octokit.git.createTree({
-      ...this.getServiceProps(),
-      tree: [
-        {
-          path: `notes/${destination}.md`,
-          mode: '100644',
-          type: 'blob',
-          sha: newBlob.data.sha,
-        },
-      ],
-      base_tree: treeSHA,
-    });
+  //   // create a new tree containing the new blob
+  //   const { data: createTreeData } = await this.octokit.git.createTree({
+  //     ...this.getServiceProps(),
+  //     tree: [
+  //       {
+  //         path: `notes/${destination}.md`,
+  //         mode: '100644',
+  //         type: 'blob',
+  //         sha: newBlob.data.sha,
+  //       },
+  //     ],
+  //     base_tree: treeSHA,
+  //   });
 
-    const { data: createCommitData } = await this.octokit.git.createCommit({
-      ...this.getServiceProps(),
-      // commit message is a random hex string
-      message: crypto.randomBytes(4).toString('hex'),
-      tree: createTreeData.sha,
-      parents: [commitSHA],
-    });
+  //   const { data: createCommitData } = await this.octokit.git.createCommit({
+  //     ...this.getServiceProps(),
+  //     // commit message is a random hex string
+  //     message: crypto.randomBytes(4).toString('hex'),
+  //     tree: createTreeData.sha,
+  //     parents: [commitSHA],
+  //   });
 
-    // push
-    await this.octokit.git.updateRef({
-      ...this.getServiceProps(),
-      ref: `heads/${this.branch}`,
-      sha: createCommitData.sha,
-      force: true,
-    });
-  }
+  //   // push
+  //   await this.octokit.git.updateRef({
+  //     ...this.getServiceProps(),
+  //     ref: `heads/${this.branch}`,
+  //     sha: createCommitData.sha,
+  //     force: true,
+  //   });
+  // }
 
   public async fetchNote(opts: {
     name: string;
   }) {
     const { name } = opts;
-    const { commitSHA, treeSHA, content } = await this.fetchObject({
-      query: `notes/${name}.md`,
+    if (this.dendronConfig === undefined) {
+      const { dendronConfig } = await this.fetchConfig();
+      this.dendronConfig = dendronConfig;
+    }
+
+    let prefix = 'notes';
+    const isSelfContained = this.dendronConfig.dev?.enableSelfContainedVaults;
+
+    if (!isSelfContained) {
+      // TODO: this needs to change once we decide to support multivault
+      const vault = this.dendronConfig.workspace.vaults[0];
+      prefix = vault.fsPath;
+    }
+
+    const {
+      commitSHA, treeSHA, content,
+    } = await this.fetchObject({
+      query: `${prefix}/${name}.md`,
     });
+
+    // url grabbed from the octokit api is not human readable.
+    // create a humand readable url
+    // TODO: we should probably add common-all / common-server in the future
+    // and reuse the logic we already have instead of rolling up
+    // custom logic separately here
+    // this probably also doesn't belong in GithubService
+    const url = `https://github.com/${config.OWNER}/${config.REPO}/blob/${config.BRANCH}/${prefix}/${name}.md`;
+
+    const { data: frontmatter, content: body } = matter(content, {
+      engines: {
+        yaml: {
+          parse: (s: string) => yaml.load(s) as object,
+          stringify: (data: object) => yaml.dump(data),
+        },
+      },
+    });
+
     return {
       commitSHA,
       treeSHA,
       content,
+      url,
+      frontmatter,
+      body,
     };
   }
 
@@ -135,11 +170,11 @@ export class GithubService {
     const { commitSHA, treeSHA, content } = await this.fetchObject({
       query: 'dendron.yml',
     });
-    const config = yaml.load(content);
+    const dendronConfig = yaml.load(content) as IntermediateDendronConfig;
     return {
       commitSHA,
       treeSHA,
-      config,
+      dendronConfig,
     };
   }
 
