@@ -56,6 +56,9 @@ export class LookupResultBuilder {
 
   private buildBodyEmbed() {
     let { body } = this.opts;
+    if (body.length === 0) {
+      body = `The note \`${this.opts.frontmatter.title}\` is empty :face_with_spiral_eyes:`;
+    }
     if (body.length > 4096) {
       body = `${body.substring(0, 4000)}\n\n...\n_*(truncated)*_`;
     }
