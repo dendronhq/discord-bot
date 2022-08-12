@@ -48,7 +48,7 @@ export default class LookupCommand extends BaseCommand {
       });
       return;
     }
-    interaction.deferReply();
+    await interaction.deferReply();
     const mode = interaction.options.getString('mode');
     try {
       const fetchNoteResp = await github.fetchNote({ name });
